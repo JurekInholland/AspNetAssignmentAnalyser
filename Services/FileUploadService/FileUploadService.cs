@@ -60,7 +60,7 @@ public class FileUploadService : IFileUploadService
         string path = Path.Combine("upload", id.ToString());
         File.Copy("SnakeFiles/index.html", Path.Combine(path, "index.html"), overwrite: true);
 
-        _snakeTestService.RunTests(id, connectionId);
+        _snakeTestService.RunTests(path, connectionId);
     }
 
 

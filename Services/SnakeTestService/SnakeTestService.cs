@@ -30,11 +30,25 @@ public class SnakeTestService : ISnakeTestService
         _hub = hub;
         Results = new();
 
+        var ff = new FirefoxOptions
+        {
+            LogLevel = FirefoxDriverLogLevel.Trace,
+        };
+        ff.AddArguments("--headless");
+
+        _options.SetLoggingPreference(LogType.Browser, LogLevel.All);
+        _options.SetLoggingPreference(LogType.Driver, LogLevel.All);
+        _options.SetLoggingPreference(LogType.Server, LogLevel.All);
         _options.AddArgument("--headless");
         _options.AddArgument("--no-sandbox");
         _options.AddArgument("--disable-gpu");
+
         _options.AddArgument("--disable-dev-shm-usage");
         _options.AddArgument("--window-size=1024x768");
+
+
+        // new DriverManager().SetUpDriver(new FirefoxConfig());
+        // _driver = new FirefoxDriver(ff);
 
         new DriverManager().SetUpDriver(new ChromeConfig());
         _driver = new ChromeDriver(_options);
@@ -45,19 +59,12 @@ public class SnakeTestService : ISnakeTestService
     }
 
 
-    public async Task RunTests(Guid id, string connectionId)
+    public async Task RunTests(string path, string connectionId)
     {
-        // var indexPath = Path.Combine(path, "index.html");
+        var indexPath = Path.Combine(path, "index.html");
 
-        var relativePath = Path.Combine("upload", id.ToString(), "index.html");
-        var url = Path.Combine("file://", Path.GetFullPath(relativePath));
-        // Guid id = Guid.NewGuid();
-
-        // var url = Path.Combine("file://", "upload", id.ToString(), "index.html");
-
-
-        // var url = "file://" + Path.GetFullPath(indexPath);
-        // Console.WriteLine("CHROME DRIVER URL: " + url);
+        var url = "file://" + Path.GetFullPath(indexPath);
+        Console.WriteLine("CHROME DRIVER URL: " + url);
 
         _driver.Navigate().GoToUrl(url);
         _body = _driver.FindElement(By.XPath("html/body"));
@@ -116,10 +123,7 @@ public class SnakeTestService : ISnakeTestService
         _driver.Quit();
     }
 
-    // private string GetIndexUrl(Guid id)
-    // {
-    //
-    // }
+
 
     private object? ExecuteScript(string script, params object[] args)
     {

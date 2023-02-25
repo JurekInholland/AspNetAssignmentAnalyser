@@ -2,5 +2,5 @@
 
 public interface ISnakeTestService
 {
-    public Task RunTests(Guid id, string conId);
+    public Task RunTests(string path, string conId);
 }

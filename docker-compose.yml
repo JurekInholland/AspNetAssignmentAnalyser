@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+        context: .
+        dockerfile: Api/Dockerfile
+#    image: my-app
+    ports:
+      - "8080:8080"
+      - "80:80"
+    environment:
+      - JAVA_OPTS=-Dwebdriver.chrome.whitelistedIps=

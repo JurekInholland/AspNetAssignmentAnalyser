@@ -13,7 +13,7 @@ public class SubmissionHub : Hub
     public async Task SendMessageToClient(string user, string message)
     {
         Console.WriteLine("SubmissionHub SendMessageToClient" + user + message);
-        await Clients.Client(user).SendAsync("ReceiveMessage", user, message);
+        await Clients.Client(user).SendAsync("ReceiveMessage", message);
     }
 
     public override async Task OnConnectedAsync()

@@ -1,31 +1,30 @@
 using Services;
+using Services.FileUploadService;
+using Services.SnakeTestService;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
+builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+builder.Services.AddScoped<ISnakeTestService, SnakeTestService>();
+builder.Services.AddSingleton<SubmissionHub>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseAuthorization();
-
 app.MapControllers();
 app.MapHub<SubmissionHub>("/api/signalr");
 
-app.Run();
+await app.RunAsync();

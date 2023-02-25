@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import { getCurrentInstance, onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
+// import { HubConnectionBuilder } from '@microsoft/signalr';
+import { useSignalR } from '@quangdao/vue-signalr';
+
 import Upload from './pages/Upload.vue';
-onMounted(() => {
-  const signalr = getCurrentInstance()?.appContext.config.globalProperties.$signalR;
+const signalr = useSignalR();
+onMounted(async () => {
+  signalr.getConnectionStatus();
   console.log(signalr);
+
+  signalr.on('ReceiveMessage', (message: string) => {
+    console.log("m:" + message);
+  });
 });
 
 </script>

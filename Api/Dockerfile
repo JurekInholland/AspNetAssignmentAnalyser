@@ -1,27 +1,22 @@
-﻿FROM node:16-alpine AS vite_build
+﻿FROM node:19-alpine AS build-ui
 WORKDIR /app
-COPY "./ui" "."
+COPY ./ui .
 RUN npm install
 RUN npm run build
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-app
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
-
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
-WORKDIR /src
-COPY ["Api/Api.csproj", "Api/"]
-RUN dotnet restore "Api/Api.csproj"
 COPY . .
-WORKDIR "/src/Api"
-RUN dotnet build "Api.csproj" -c Release -o /app/build
+RUN dotnet publish Api/Api.csproj -c Release -o out --self-contained -r linux-x64 /p:PublishTrimmed=true /p:PublishSingleFile=true
 
-FROM build AS publish
-RUN dotnet publish "Api.csproj" -c Release -o /app/publish
-
-FROM base AS final
+FROM selenium/standalone-chrome
 WORKDIR /app
-COPY --from=publish /app/publish .
-COPY --from=vite_build /app/dist ./wwwroot
-ENTRYPOINT ["dotnet", "Api.dll"]
+COPY --from=build-app /app/out .
+COPY --from=build-ui /app/dist ./wwwroot
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 \
+  DOTNET_RUNNING_IN_CONTAINER=true \
+  ASPNETCORE_URLS=http://+:8080 \
+  SE_OPTS="-port 4444"
+ENV DISPLAY=:99
+
+ENTRYPOINT ["./Api", "--urls", "http://0.0.0.0:8080"]

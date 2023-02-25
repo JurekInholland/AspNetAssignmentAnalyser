@@ -30,4 +30,20 @@
       <ProjectReference Include="..\Services\Services.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="wwwroot\assets\index-08cab964.css" />
+      <_ContentIncludedByDefault Remove="wwwroot\assets\index-316eef2e.js" />
+      <_ContentIncludedByDefault Remove="wwwroot\assets\vue-5532db34.svg" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="SnakeFiles\index.html">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="upload" />
+    </ItemGroup>
+
 </Project>

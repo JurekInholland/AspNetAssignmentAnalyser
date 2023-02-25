@@ -5,7 +5,7 @@ using Services;
 namespace Api.Controllers;
 
 [Route("")]
-public class PageController : ControllerBase
+public class PageController : BaseController
 {
     private static readonly string IndexHtml = System.IO.File.ReadAllText("wwwroot/index.html");
     private readonly IHubContext<SubmissionHub> _hubContext;

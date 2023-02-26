@@ -135,17 +135,17 @@ function reset() {
                 <span v-if="inProgress" class="loader"></span>
                 <h2>{{ currentStatus }}</h2>
             </article>
-        </div> -->
-        <ul v-auto-animate>
-            <li v-for=" res of testResults">
-                <TestResult :testResult="res" />
-            </li>
-        </ul>
-        <button v-if="testGrade < 1 && !inProgress" class="btn2" @click="reset">
-            Try Again
-        </button>
+            <ul v-auto-animate>
+                <li v-for=" res of testResults">
+                    <TestResult :testResult="res" />
+                </li>
+            </ul>
+            <button v-if="testGrade < 1 && !inProgress" class="btn2" @click="reset">
+                Try Again
+            </button>
+        </div>
     </div>
-</div></template>
+</template>
 
 <style scoped>
 ul {
@@ -169,4 +169,5 @@ article>svg {
     min-width: 3rem;
     min-height: 3rem;
 }
+
 </style>

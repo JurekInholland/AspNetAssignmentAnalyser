@@ -21,7 +21,8 @@ builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 builder.Services.AddSingleton<SubmissionHub>();
 
 var connectionString = builder.Configuration.GetValue<string>("AzureWebJobsStorage");
-builder.Services.AddSingleton(_ => new BlobServiceClient(connectionString));
+if (connectionString != null)
+    builder.Services.AddSingleton(_ => new BlobServiceClient(connectionString));
 
 builder.Services.Configure<AppConfig>(cfg =>
 {

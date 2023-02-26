@@ -5,7 +5,6 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
-using LogLevel = OpenQA.Selenium.LogLevel;
 
 namespace Services.SnakeTestService;
 
@@ -34,13 +33,14 @@ public class SnakeTestService : ISnakeTestService
             IsGoldenAppleImplemented,
         };
 
-        _options.SetLoggingPreference(LogType.Browser, LogLevel.Warning);
-        _options.SetLoggingPreference(LogType.Driver, LogLevel.Warning);
+        // _options.SetLoggingPreference(LogType.Browser, LogLevel.Warning);
+        // _options.SetLoggingPreference(LogType.Driver, LogLevel.Warning);
         _options.AddArgument("--headless");
         _options.AddArgument("--no-sandbox");
         _options.AddArgument("--disable-gpu");
         _options.AddArgument("--disable-dev-shm-usage");
         _options.AddArgument("--window-size=1024x768");
+        // _options.AddArgument("--log-level=3");
 
         new DriverManager().SetUpDriver(new ChromeConfig());
     }
@@ -72,13 +72,13 @@ public class SnakeTestService : ISnakeTestService
         for (int i = 1; i < _testMethods.Length; i++)
         {
             var methodName = _testMethods[i].Method.Name;
-            _logger.LogInformation("Running test {I} - {MethodName} ", i, methodName);
 
             Thread.Sleep(100);
             var passed = _testMethods[i]();
             var testResult = new TestResult(i, passed);
             results.Add(testResult);
 
+            _logger.LogInformation("Test {I} - {MethodName} [{Passed}]", i, methodName, passed);
             await _hub.SendTestResult(connectionId, testResult);
         }
 

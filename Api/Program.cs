@@ -21,16 +21,32 @@ builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 builder.Services.AddSingleton<SubmissionHub>();
 
 var connectionString = builder.Configuration.GetValue<string>("AzureWebJobsStorage");
-if (connectionString != null)
-    builder.Services.AddSingleton(_ => new BlobServiceClient(connectionString));
+if (connectionString == null) throw new Exception("AzureWebJobsStorage variable is not set");
+builder.Services.AddSingleton(_ => new BlobServiceClient(connectionString));
 
-builder.Services.Configure<AppConfig>(cfg =>
+
+builder.Services.AddSingleton<AppConfig>(provider =>
 {
-    cfg.SendGridApiKey = builder.Configuration.GetValue<string>("SendGridApiKey") ?? string.Empty;
-    cfg.SendGridFromEmail = builder.Configuration.GetValue<string>("SendGridFromEmail") ?? string.Empty;
-    cfg.SendGridToEmail = builder.Configuration.GetValue<string>("SendGridToEmail") ?? string.Empty;
-    cfg.UserHeaderKey = builder.Configuration.GetValue<string>("UserHeaderKey") ?? "x-userid";
+    var c = provider
+        .GetRequiredService<IConfiguration>()
+        .GetRequiredSection("MyConfiguration");
+    var config = new AppConfig
+    {
+        SendGridApiKey = builder.Configuration.GetValue<string>("SendGridApiKey") ?? string.Empty,
+        SendGridFromEmail = builder.Configuration.GetValue<string>("SendGridFromEmail") ?? string.Empty,
+        SendGridToEmail = builder.Configuration.GetValue<string>("SendGridToEmail") ?? string.Empty,
+        UserHeaderKey = builder.Configuration.GetValue<string>("UserHeaderKey") ?? "x-userid",
+    };
+    return config;
 });
+
+// builder.Services.Configure<AppConfig>(cfg =>
+// {
+//     cfg.SendGridApiKey = builder.Configuration.GetValue<string>("SendGridApiKey") ?? string.Empty;
+//     cfg.SendGridFromEmail = builder.Configuration.GetValue<string>("SendGridFromEmail") ?? string.Empty;
+//     cfg.SendGridToEmail = builder.Configuration.GetValue<string>("SendGridToEmail") ?? string.Empty;
+//     cfg.UserHeaderKey = builder.Configuration.GetValue<string>("UserHeaderKey") ?? "x-userid";
+// });
 
 var app = builder.Build();
 

@@ -109,7 +109,12 @@ public class FileUploadService : IFileUploadService
             report.StudentEmail = userEmail;
             await _hub.SendStatus(connectionId, "done");
 
-            var uri = await _blobStorageService.UploadFile(file, id.ToString());
+
+            using var stream = new MemoryStream();
+            await file.CopyToAsync(stream);
+            stream.Position = 0;
+            var fileName = id + ".zip";
+            var uri = await _blobStorageService.UploadFile(stream, fileName, file.ContentType);
 
             await _emailService.SendTestReport(report, uri);
         }

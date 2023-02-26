@@ -1,6 +1,5 @@
 ﻿using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
 namespace Services.BlobStorageService;
@@ -21,15 +20,11 @@ public class BlobStorageService : IBlobStorageService
     /// Upload a given file to blob storage with the given filename
     /// </summary>
     /// <returns>Uri to blob</returns>
-    public async Task<string> UploadFile(IFormFile file, string fileName)
+    public async Task<string> UploadFile(MemoryStream stream, string fileName, string contentType)
     {
-        using var stream = new MemoryStream();
-        await file.CopyToAsync(stream);
-        stream.Position = 0;
-
-        var blobClient = _blobContainerClient.GetBlobClient(fileName + ".zip");
+        var blobClient = _blobContainerClient.GetBlobClient(fileName);
         await blobClient.UploadAsync(stream, overwrite: true);
-        await blobClient.SetHttpHeadersAsync(new BlobHttpHeaders {ContentType = file.ContentType});
+        await blobClient.SetHttpHeadersAsync(new BlobHttpHeaders {ContentType = contentType});
         _logger.LogInformation("Uploaded file to blob storage");
         return blobClient.Uri.ToString();
     }

@@ -1,8 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-
-namespace Services.BlobStorageService;
+﻿namespace Services.BlobStorageService;
 
 public interface IBlobStorageService
 {
-    public Task<string> UploadFile(IFormFile file, string fileName);
+    public Task<string> UploadFile(MemoryStream stream, string fileName, string contentType);
 }

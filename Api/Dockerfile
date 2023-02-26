@@ -15,8 +15,8 @@ COPY --from=build-app /app/out .
 COPY --from=build-ui /app/dist ./wwwroot
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 \
   DOTNET_RUNNING_IN_CONTAINER=true \
-  ASPNETCORE_URLS=http://+:80 \
+  ASPNETCORE_URLS=http://+:8080 \
   SE_OPTS="-port 4444"
 ENV DISPLAY=:99
 
-ENTRYPOINT ["./Api", "--urls", "http://0.0.0.0:80"]
+ENTRYPOINT ["./Api", "--urls", "http://0.0.0.0:8080"]

@@ -6,11 +6,14 @@ public static class TestNames
     {
         {1, "Canvas size has been increased"},
         {2, "Snake movement speed has been decreased"},
-        {3, "Edge collision has been implemented"},
-        {4, "Score is increased by eating apples"},
-        {5, "Snake color is randomized"},
-        {6, "Golden apple has been implemented"},
-
+        {3, "Snake can move up"},
+        {4, "Snake can move down"},
+        {5, "Snake can move left"},
+        {6, "Snake can move right"},
+        {7, "Edge collision has been implemented"},
+        {8, "Score is increased by eating apples"},
+        {9, "Snake color is randomized"},
+        {10, "Golden apple has been implemented"},
     };
 
     public static string GetName(int testNumber)

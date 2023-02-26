@@ -4,5 +4,5 @@ namespace Services.FileUploadService;
 
 public interface IFileUploadService
 {
-    public Task SubmitFile(IFormCollection collection);
+    public Task SubmitFile(IFormCollection collection, int userId);
 }

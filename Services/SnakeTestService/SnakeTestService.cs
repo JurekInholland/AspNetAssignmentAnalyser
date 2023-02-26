@@ -1,44 +1,41 @@
 ﻿using Models;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Support.UI;
 using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
-using WebDriverManager.Helpers;
 
 namespace Services.SnakeTestService;
 
 public class SnakeTestService : ISnakeTestService
 {
-    private readonly IWebDriver _driver = null!;
-    private readonly IJavaScriptExecutor _js = null!;
+    private IWebDriver _driver = null!;
+    private IJavaScriptExecutor _js = null!;
     private IWebElement _body = null!;
-    private readonly WebDriverWait _wait = null!;
+    private WebDriverWait _wait = null!;
 
 
     private long _cellSize;
     private readonly SubmissionHub _hub;
 
-    public List<TestResult> Results { get; set; }
-
 
     private readonly ChromeOptions _options = new();
+
+    private readonly Func<bool>[] _testMethods;
 
     public SnakeTestService(SubmissionHub hub)
     {
         _hub = hub;
-        Results = new();
-
-        var ff = new FirefoxOptions
+        _testMethods = new[]
         {
-            LogLevel = FirefoxDriverLogLevel.Trace,
+            IsCanvasSizeIncreased, IsSnakeMovementSpeedDecreased, SnakeHandlesUpKey, SnakeHandlesDownKey, SnakeHandlesLeftKey,
+            SnakeHandlesRightKey, IsEdgeCollisionImplemented, IsScoreIncreasedByApple, SpeedCanIncrease, IsSnakeColorRandomized,
+            IsGoldenAppleImplemented,
         };
-        ff.AddArguments("--headless");
 
-        _options.SetLoggingPreference(LogType.Browser, LogLevel.All);
-        _options.SetLoggingPreference(LogType.Driver, LogLevel.All);
-        _options.SetLoggingPreference(LogType.Server, LogLevel.All);
+        _options.SetLoggingPreference(LogType.Browser, LogLevel.Warning);
+        _options.SetLoggingPreference(LogType.Driver, LogLevel.Warning);
+        _options.SetLoggingPreference(LogType.Server, LogLevel.Warning);
         _options.AddArgument("--headless");
         _options.AddArgument("--no-sandbox");
         _options.AddArgument("--disable-gpu");
@@ -46,21 +43,16 @@ public class SnakeTestService : ISnakeTestService
         _options.AddArgument("--disable-dev-shm-usage");
         _options.AddArgument("--window-size=1024x768");
 
-
-        // new DriverManager().SetUpDriver(new FirefoxConfig());
-        // _driver = new FirefoxDriver(ff);
-
         new DriverManager().SetUpDriver(new ChromeConfig());
-        _driver = new ChromeDriver(_options);
-
-
-        _js = (IJavaScriptExecutor) _driver;
-        _wait = new WebDriverWait(new SystemClock(), _driver, TimeSpan.FromMilliseconds(400), TimeSpan.FromMilliseconds(15));
     }
 
 
-    public async Task RunTests(string path, string connectionId)
+    public async Task<TestReport> RunTests(string path, string connectionId)
     {
+        _driver = new ChromeDriver(_options);
+        _js = (IJavaScriptExecutor) _driver;
+        _wait = new WebDriverWait(new SystemClock(), _driver, TimeSpan.FromMilliseconds(400), TimeSpan.FromMilliseconds(15));
+
         var indexPath = Path.Combine(path, "index.html");
 
         var url = "file://" + Path.GetFullPath(indexPath);
@@ -71,76 +63,44 @@ public class SnakeTestService : ISnakeTestService
 
         _wait.Until(d => ((IJavaScriptExecutor) d).ExecuteScript("return document.readyState").Equals("complete"));
 
+        _cellSize = (long) (ExecuteScript("return CELL_SIZE") ?? 0);
 
-        for (int i = 0; i < 5; i++)
+        if (_cellSize == 0)
         {
-            Thread.Sleep(100);
-            try
-            {
-                // var apple = _js.ExecuteScript("return window");
-                // Console.WriteLine("AAAAAPPP: " + apple);
-                // var test = ExecuteScript("return window.wrappedJSObject.CELL_SIZE");
-                //
-                // Console.WriteLine("TEST CELL SIZE " + test);
-
-                _cellSize = (long) (ExecuteScript("return CELL_SIZE") ?? 0);
-                Console.WriteLine("old cell size " + _cellSize);
-
-                break;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("caught: " + e.Message);
-            }
+            await _hub.SendStatus(connectionId, "CELL_SIZE is not defined");
+            throw new Exception("CELL_SIZE is not defined");
         }
 
+        List<TestResult> results = new();
+        for (int i = 1; i < _testMethods.Length; i++)
+        {
+            Thread.Sleep(100);
 
-        Results.Add(new TestResult(1, IsCanvasSizeIncreased()));
-        await _hub.SendMessageToClient(connectionId, Results[^1].Number + Results[^1].Passed.ToString());
-        Results.Add(new TestResult(2, IsSnakeMovementSpeedDecreased()));
-        await _hub.SendMessageToClient(connectionId, Results[^1].Number + Results[^1].Passed.ToString());
-        Results.Add(new TestResult(3, IsEdgeCollisionImplemented()));
-        await _hub.SendMessageToClient(connectionId, Results[^1].Number + Results[^1].Passed.ToString());
-        Results.Add(new TestResult(4, IsScoreIncreasedByApple()));
-        await _hub.SendMessageToClient(connectionId, Results[^1].Number + Results[^1].Passed.ToString());
-        Results.Add(new TestResult(5, IsSnakeColorRandomized()));
-        await _hub.SendMessageToClient(connectionId, Results[^1].Number + Results[^1].Passed.ToString());
-        Results.Add(new TestResult(7, SnakeHandlesRightKey()));
-        await _hub.SendMessageToClient(connectionId, Results[^1].Number + Results[^1].Passed.ToString());
+            var methodName = _testMethods[i].Method.Name;
+            Console.WriteLine($"Running test {i} - {methodName} ");
+            var passed = _testMethods[i]();
+            var result = new TestResult(i, passed);
+            results.Add(result);
 
-        Thread.Sleep(100);
-        Results.Add(new TestResult(8, SnakeHandlesUpKey()));
+            await _hub.SendTestResult(connectionId, result);
+        }
 
-        Thread.Sleep(100);
-        Results.Add(new TestResult(9, SnakeHandlesDownKey()));
-
-        Thread.Sleep(100);
-        Results.Add(new TestResult(6, SnakeHandlesLeftKey()));
-        Results.Add(new TestResult(10, IsGoldenAppleImplemented()));
-        Results.Add(new TestResult(11, SpeedCanIncrease()));
+        var testRes = new TestResult(11, false);
+        await _hub.SendTestResult(connectionId, testRes);
 
         _driver.Close();
         _driver.Quit();
+        return new TestReport
+        {
+            Id = Guid.NewGuid(),
+            Results = results,
+        };
     }
-
 
 
     private object? ExecuteScript(string script, params object[] args)
     {
-        try
-        {
-            return _js.ExecuteScript(script, args);
-        }
-        catch (JavaScriptException jsException)
-        {
-            Console.WriteLine("JS EXCEPTION: " + jsException.Message);
-            return null;
-        }
-        catch (WebDriverException webDriverException)
-        {
-            Console.WriteLine("WEB DRIVER EXCEPTION: " + webDriverException.Message);
-            return null;
-        }
+        return _js.ExecuteScript(script, args);
     }
 
     private void TriggerKey(string key)
@@ -309,7 +269,6 @@ public class SnakeTestService : ISnakeTestService
     private bool SnakeHandlesUpKey()
     {
         RestartGame();
-
 
         // snake starts at y = 0, so move it down first to avoid instant death.
         ExecuteScript(" snake.dx=20;snake.dy=0; snake.y = 300; snake.x = 0;");

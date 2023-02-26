@@ -1,4 +1,5 @@
 using Services;
+using Services.EmailService;
 using Services.FileUploadService;
 using Services.SnakeTestService;
 
@@ -12,7 +13,16 @@ builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true
 
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddScoped<ISnakeTestService, SnakeTestService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddSingleton<SubmissionHub>();
+
+builder.Services.Configure<AppConfig>(cfg =>
+{
+    cfg.SendGridApiKey = builder.Configuration.GetValue<string>("SendGridApiKey") ?? string.Empty;
+    cfg.SendGridFromEmail = builder.Configuration.GetValue<string>("SendGridFromEmail") ?? string.Empty;
+    cfg.SendGridToEmail = builder.Configuration.GetValue<string>("SendGridToEmail") ?? string.Empty;
+    cfg.UserHeaderKey = builder.Configuration.GetValue<string>("UserHeaderKey") ?? "x-userid";
+});
 
 var app = builder.Build();
 

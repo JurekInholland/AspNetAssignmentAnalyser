@@ -1,9 +1,11 @@
 import { createApp } from "vue";
-import SignalRPlugin from "./plugins/signalr";
+import { VueSignalR } from '@quangdao/vue-signalr';
+import { autoAnimatePlugin } from '@formkit/auto-animate/vue'
 
 import "./style.css";
 import App from "./App.vue";
 
 const app = createApp(App)
-  .use(SignalRPlugin, { url: "/api/signalr" })
+.use(VueSignalR, { url: '/api/signalr' })
+.use(autoAnimatePlugin)
   .mount("#app");

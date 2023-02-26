@@ -1,31 +1,40 @@
 using Services;
+using Services.EmailService;
+using Services.FileUploadService;
+using Services.SnakeTestService;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSignalR();
+builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+builder.Services.AddScoped<ISnakeTestService, SnakeTestService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddSingleton<SubmissionHub>();
+
+builder.Services.Configure<AppConfig>(cfg =>
+{
+    cfg.SendGridApiKey = builder.Configuration.GetValue<string>("SendGridApiKey") ?? string.Empty;
+    cfg.SendGridFromEmail = builder.Configuration.GetValue<string>("SendGridFromEmail") ?? string.Empty;
+    cfg.SendGridToEmail = builder.Configuration.GetValue<string>("SendGridToEmail") ?? string.Empty;
+    cfg.UserHeaderKey = builder.Configuration.GetValue<string>("UserHeaderKey") ?? "x-userid";
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// app.UseHttpsRedirection();
 app.UseStaticFiles();
-
 app.UseAuthorization();
-
 app.MapControllers();
 app.MapHub<SubmissionHub>("/api/signalr");
 
-app.Run();
+await app.RunAsync();

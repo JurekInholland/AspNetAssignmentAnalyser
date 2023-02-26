@@ -1,6 +1,10 @@
 ###################
 # compiled source #
 ###################
+node_modules/
+.idea/
+Api/upload/
+Api/wwwroot/assets/
 *.com
 *.class
 *.dll

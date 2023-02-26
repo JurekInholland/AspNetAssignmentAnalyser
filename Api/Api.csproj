@@ -5,15 +5,15 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-        
+
         <SpaProxyServerUrl>https://localhost:44414</SpaProxyServerUrl>
         <SpaProxyLaunchCommand>npm start</SpaProxyLaunchCommand>
     </PropertyGroup>
 
-    <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="7.0.1" />
-    </ItemGroup>
-    
+<!--    <ItemGroup>-->
+<!--        <PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="7.0.1" />-->
+<!--    </ItemGroup>-->
+
     <ItemGroup>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.3" />
         <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
@@ -21,13 +21,19 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="..\.dockerignore">
-        <Link>.dockerignore</Link>
-      </Content>
+        <ProjectReference Include="..\Services\Services.csproj" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+        <None Update="SnakeFiles\index.html">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Services\Services.csproj" />
+        <Folder Include="upload" />
+        <Folder Include="wwwroot" />
     </ItemGroup>
 
 </Project>

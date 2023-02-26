@@ -2,9 +2,10 @@
 
 namespace Api.Controllers;
 
+
 [ApiController]
 [Route("/api/[controller]")]
-public class ApiController : ControllerBase
+public abstract class BaseController : ControllerBase
 {
     
 }

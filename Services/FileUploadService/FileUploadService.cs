@@ -16,7 +16,7 @@ public class FileUploadService : IFileUploadService
     private readonly IBlobStorageService _blobStorageService;
 
     private const string CustomCode =
-        "Window.Game.getFps = () => { return framesPerSecond; }; Window.Game.eatApple = eatApple; Window.Game.getPause = () => { return pauze; }; Window.Game.getScore = () => { return score; }})(Window.Game);";
+        "Window.Game.getFps = () => { return frameCounterLimit; }; Window.Game.eatApple = eatApple; Window.Game.getPause = () => { return pauze; }; Window.Game.getScore = () => { return score; }})(Window.Game);";
 
     public FileUploadService(SubmissionHub hub, ISnakeTestService snakeTestService, IEmailService emailService,
         IBlobStorageService blobStorageService)
@@ -27,6 +27,11 @@ public class FileUploadService : IFileUploadService
         _blobStorageService = blobStorageService;
     }
 
+    /// <summary>
+    ///    Submit a file to the server; This method is run in a background thread
+    /// </summary>
+    /// <param name="collection"></param>
+    /// <param name="userEmail"></param>
     public async Task SubmitFile(IFormCollection collection, string userEmail)
     {
         try

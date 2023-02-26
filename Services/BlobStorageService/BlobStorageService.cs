@@ -23,10 +23,14 @@ public class BlobStorageService : IBlobStorageService
     /// <returns>Uri to blob</returns>
     public async Task<string> UploadFile(IFormFile file, string fileName)
     {
-        _logger.LogInformation("Uploading file to blob storage");
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
         var blobClient = _blobContainerClient.GetBlobClient(fileName + ".zip");
-        await blobClient.UploadAsync(file.OpenReadStream());
+        await blobClient.UploadAsync(stream, overwrite: true);
         await blobClient.SetHttpHeadersAsync(new BlobHttpHeaders {ContentType = file.ContentType});
+        _logger.LogInformation("Uploaded file to blob storage");
         return blobClient.Uri.ToString();
     }
 }

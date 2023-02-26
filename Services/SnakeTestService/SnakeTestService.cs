@@ -1,30 +1,31 @@
-﻿using Models;
+﻿using Microsoft.Extensions.Logging;
+using Models;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
+using LogLevel = OpenQA.Selenium.LogLevel;
 
 namespace Services.SnakeTestService;
 
 public class SnakeTestService : ISnakeTestService
 {
+    private readonly ILogger<SnakeTestService> _logger;
+    private readonly SubmissionHub _hub;
+
     private IWebDriver _driver = null!;
     private IJavaScriptExecutor _js = null!;
     private IWebElement _body = null!;
     private WebDriverWait _wait = null!;
 
-
-    private long _cellSize;
-    private readonly SubmissionHub _hub;
-
-
     private readonly ChromeOptions _options = new();
-
     private readonly Func<bool>[] _testMethods;
+    private long _cellSize;
 
-    public SnakeTestService(SubmissionHub hub)
+    public SnakeTestService(ILogger<SnakeTestService> logger, SubmissionHub hub)
     {
+        _logger = logger;
         _hub = hub;
         _testMethods = new[]
         {
@@ -35,11 +36,9 @@ public class SnakeTestService : ISnakeTestService
 
         _options.SetLoggingPreference(LogType.Browser, LogLevel.Warning);
         _options.SetLoggingPreference(LogType.Driver, LogLevel.Warning);
-        _options.SetLoggingPreference(LogType.Server, LogLevel.Warning);
         _options.AddArgument("--headless");
         _options.AddArgument("--no-sandbox");
         _options.AddArgument("--disable-gpu");
-
         _options.AddArgument("--disable-dev-shm-usage");
         _options.AddArgument("--window-size=1024x768");
 
@@ -53,10 +52,8 @@ public class SnakeTestService : ISnakeTestService
         _js = (IJavaScriptExecutor) _driver;
         _wait = new WebDriverWait(new SystemClock(), _driver, TimeSpan.FromMilliseconds(400), TimeSpan.FromMilliseconds(15));
 
-        var indexPath = Path.Combine(path, "index.html");
-
-        var url = "file://" + Path.GetFullPath(indexPath);
-        Console.WriteLine("CHROME DRIVER URL: " + url);
+        var filePath = Path.Combine(path, "index.html");
+        var url = Path.Combine("file://", filePath);
 
         _driver.Navigate().GoToUrl(url);
         _body = _driver.FindElement(By.XPath("html/body"));
@@ -74,19 +71,19 @@ public class SnakeTestService : ISnakeTestService
         List<TestResult> results = new();
         for (int i = 1; i < _testMethods.Length; i++)
         {
-            Thread.Sleep(100);
-
             var methodName = _testMethods[i].Method.Name;
-            Console.WriteLine($"Running test {i} - {methodName} ");
-            var passed = _testMethods[i]();
-            var result = new TestResult(i, passed);
-            results.Add(result);
+            _logger.LogInformation("Running test {I} - {MethodName} ", i, methodName);
 
-            await _hub.SendTestResult(connectionId, result);
+            Thread.Sleep(100);
+            var passed = _testMethods[i]();
+            var testResult = new TestResult(i, passed);
+            results.Add(testResult);
+
+            await _hub.SendTestResult(connectionId, testResult);
         }
 
-        var testRes = new TestResult(11, false);
-        await _hub.SendTestResult(connectionId, testRes);
+        // var testRes = new TestResult(11, false);
+        // await _hub.SendTestResult(connectionId, testRes);
 
         _driver.Close();
         _driver.Quit();
@@ -100,7 +97,15 @@ public class SnakeTestService : ISnakeTestService
 
     private object? ExecuteScript(string script, params object[] args)
     {
-        return _js.ExecuteScript(script, args);
+        try
+        {
+            return _js.ExecuteScript(script, args);
+        }
+        catch (Exception exception) when (exception is JavaScriptException or InvalidCastException)
+        {
+            _logger.LogError("Error executing script: {Exception}", exception);
+            return null;
+        }
     }
 
     private void TriggerKey(string key)
@@ -270,7 +275,7 @@ public class SnakeTestService : ISnakeTestService
     {
         RestartGame();
 
-        // snake starts at y = 0, so move it down first to avoid instant death.
+        // snake starts at y = 0, so move it down first to avoid certain instant death.
         ExecuteScript(" snake.dx=20;snake.dy=0; snake.y = 300; snake.x = 0;");
         TriggerKey(Keys.Up);
         return ConfirmSnakeDirection(0, -_cellSize);

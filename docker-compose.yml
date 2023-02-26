@@ -7,10 +7,10 @@ services:
       dockerfile: Api/Dockerfile
     ports:
       - "8080:8080"
-      - "80:80"
     environment:
       - JAVA_OPTS=-Dwebdriver.chrome.whitelistedIps=
 #      - SendGridApiKey=api-key
 #      - SendGridFromEmail=from-email
 #      - SendGridToEmail=to-email
 #      - UserHeaderKey=X-User
+#      - AzureWebJobsStorage=UseDevelopmentStorage=true

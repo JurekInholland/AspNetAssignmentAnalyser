@@ -1,53 +1,78 @@
 ﻿# 🐍 Snake assignment analyser
 
-Built with Asp .Net Core 7.0 and Vue.js 3.0.
+## Introduction
+
+This is a web application built with Asp .Net Core 7, Vue.js 3, SignalR, Selenium, SendGrid, and Docker. It's designed for potential IT
+students who want to complete the [inholland snake assignment](https://www.inholland.nl/media/0x0geu2l/snake-assignment-v1-0.pdf).
+
+## Features
+
+- Upload and extract a .zip file containing the Snake Assignment code
+- Test the code using Selenium and update the frontend in real-time via SignalR to reflect the test results
+- Generate an HTML report and send it to study coach email address using SendGrid.
+
+This application is intended to be used within an existing authentication system. The student id/email address is retrieved from the request
+headers. The key can be supplied via the `UserHeaderKey` environment variable.
+
+The Dockerfile is using multiple stages to build the frontend with `node:19-alpine` and the backend with `mcr.microsoft.com/dotnet/sdk:7.0`.
+The artifacts are then copied to a `selenium/standalone-chrome` image. This serves the purpose of having a single, easily deployable image,
+instead of having to set up a whole bunch of microservices.
+
+### Environment variables
+
+To use the application, you need to set the following environment variables:
+
+- `SendGridApiKey`: The API key for your SendGrid account.
+- `SendGridFromEmail`: The email address you want to send the report from.
+- `SendGridToEmail`: The email address you want to send the test reports to.
+- `UserHeaderKey`: The key for the student email address in the request headers.
+
+---
+
+## Getting Started
 
 ### clone repo
 
-```bash
-git clone repo/url && cd repo
+```sh
+git clone https://github.com/JurekInholland/AspNetAssignmentAnalyser.git && cd AspNetAssignmentAnalyser
 ```
 
 ### Local development
 
-```bash
+```sh
 # from project root
-cd api
+cd Api
 dotnet watch
 
 cd ui
-npm install; npm run dev
+npm install && npm run dev
 open localhost:5173
 ```
 
-### Environment variables
-- SendGridApiKey={sendgrid api key},
-- SendGridFromEmail={from email},
-- SendGridToEmail={to email}
-- UserHeaderKey=X-User
-
 ### Deploy without docker
 
-```bash
+```sh
 # from project root
 cd ui
-npm install; npm run build
+npm install && npm run build
 rmdir ../api/wwwroot
 cp -r dist/* ../api/wwwroot/
 dotnet publish ./Api/Api.csproj -c Release -o out
 ```
 
-### Run with docker compose
-
-```bash
-# from project root
-docker compose up -d --build
-```
-
 ### Docker
 
-```bash
+```sh
 # from project root
 docker build -f .\Api\Dockerfile -t assignment-analyser .
-docker run -p 80:80 --name assignment-analyser assignment-analyser
+docker run -p 8080:8080 --name assignment-analyser assignment-analyser
+open http://localhost:8080
+```
+
+### Docker compose
+
+```sh
+# from project root
+docker compose up -d --build
+open http://localhost:8080
 ```

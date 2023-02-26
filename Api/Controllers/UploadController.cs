@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Services;
 using Services.EmailService;
 using Services.FileUploadService;
 
@@ -8,32 +10,27 @@ public class UploadController : BaseController
 {
     private readonly IFileUploadService _fileUploadService;
     private readonly IEmailService _emailService;
+    private readonly AppConfig _config;
 
-    public UploadController(IFileUploadService fileUploadService, IEmailService emailService)
+    public UploadController(IFileUploadService fileUploadService, IEmailService emailService, IOptions<AppConfig> config)
     {
         _fileUploadService = fileUploadService;
         _emailService = emailService;
+        _config = config.Value;
     }
 
     [HttpPost("", Name = nameof(UploadZip))]
     public async Task<IActionResult> UploadZip(IFormCollection collection)
     {
-        int userId = ParseUserId();
+        var userEmail = ParseRequestHeader(_config.UserHeaderKey) ?? "Unkown user";
 
-        await Task.Run(() => { _fileUploadService.SubmitFile(collection, userId); });
+        await Task.Run(() => { _fileUploadService.SubmitFile(collection, userEmail); });
         return new OkObjectResult("Test started");
     }
 
-    private int ParseUserId()
+    private string? ParseRequestHeader(string headerKey)
     {
-        if (Request.Headers.TryGetValue("x-userid", out var userId))
-        {
-            var domainName = userId.ToString().Split("@").First();
-            if (int.TryParse(domainName, out var id))
-                return id;
-        }
-
-        return 12345;
+        return Request.Headers.TryGetValue(headerKey, out var headerValue) ? headerValue.ToString() : null;
     }
 
     [HttpGet("test", Name = nameof(TestSndMail))]

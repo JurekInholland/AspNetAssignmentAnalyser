@@ -21,9 +21,17 @@ public class EmailService : IEmailService
 </head>
 <body>
     <h1>{{heading}}</h1>
+    <h3>{{student}} has submitted the snake assignment</h3>
     {{#each items}}
-        <p>{{this.number}} - {{this.name}} {{this.passed}}</p>
+        <p> <span style='font-weight: bold;'>{{this.number}}</span> - {{this.name}}: <span style='font-weight:bold;'>{{this.passed}}</span></p>
     {{/each}}
+<h3>Score: {{score}} </h3>
+    <br />
+    <a href=""{{fileUri}}"">Download submission</a>
+    <p>Job id: {{id}}</p>
+    <br />
+    <p>Best regards,</p>
+    <p>🐍 Snake assignment analyser</p>
 </body>
 </html>";
 
@@ -34,24 +42,28 @@ public class EmailService : IEmailService
         _config = config.Value;
     }
 
-    public async Task SendTestReport(TestReport report, IFormFile zipFile)
+    public async Task SendTestReport(TestReport report, string fileUri)
     {
-        var html = CreateEmail(report);
-        await SendMail(_config.SendGridToEmail, report.Name, html, zipFile);
+        var html = CreateEmail(report, fileUri);
+        await SendMail(_config.SendGridToEmail, report.Name, html);
     }
 
-    private string CreateEmail(TestReport report)
+    private string CreateEmail(TestReport report, string fileUri)
     {
         var compiled = Handlebars.Compile(Template);
 
         var html = compiled(new
         {
+            id = report.Id,
             title = "Test Report",
             heading = report.Name,
-            items = report.Results
+            items = report.Results,
+            student = report.StudentEmail,
+            score = report.Score,
+            fileUri
         });
 
-        if (html is null) throw new Exception("Error during email creation");
+        if (html is null) throw new EmailException("Error during email creation");
         return html;
         // var engine = new RazorLightEngineBuilder()
         //     .UseEmbeddedResourcesProject(System.Reflection.Assembly.GetEntryAssembly())
@@ -61,19 +73,19 @@ public class EmailService : IEmailService
         // return engine.CompileRenderAsync("Body", report).Result;
     }
 
-    private static async Task<string> CreateAttachment(IFormFile file)
-    {
-        byte[] fileBytes;
-        using (var memoryStream = new MemoryStream())
-        {
-            await file.CopyToAsync(memoryStream);
-            fileBytes = memoryStream.ToArray();
-        }
+    // private static async Task<string> CreateAttachment(IFormFile file)
+    // {
+    //     byte[] fileBytes;
+    //     using (var memoryStream = new MemoryStream())
+    //     {
+    //         await file.CopyToAsync(memoryStream);
+    //         fileBytes = memoryStream.ToArray();
+    //     }
+    //
+    //     return Convert.ToBase64String(fileBytes);
+    // }
 
-        return Convert.ToBase64String(fileBytes);
-    }
-
-    public async Task SendMail(string to, string subject, string body, IFormFile? attachment = null)
+    public async Task SendMail(string to, string subject, string body)
     {
         _client = new SendGridClient(_config.SendGridApiKey);
 
@@ -86,13 +98,19 @@ public class EmailService : IEmailService
         };
         msg.AddTo(new EmailAddress(to));
 
-        // if (attachment is not null)
-        // {
-        //     msg.AddAttachment("attach", await CreateAttachment(attachment), type: "application/pdf" );
-        // }
-
         var response = await _client.SendEmailAsync(msg);
-        if (!response.IsSuccessStatusCode) throw new Exception("Email was not sent");
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new EmailException(response.StatusCode.ToString());
+        }
+
         _logger.LogInformation("Email sent");
+    }
+}
+
+public class EmailException : Exception
+{
+    public EmailException(string msg) : base(msg)
+    {
     }
 }

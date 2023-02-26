@@ -1,4 +1,6 @@
+using Azure.Storage.Blobs;
 using Services;
+using Services.BlobStorageService;
 using Services.EmailService;
 using Services.FileUploadService;
 using Services.SnakeTestService;
@@ -14,7 +16,12 @@ builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddScoped<ISnakeTestService, SnakeTestService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
+
 builder.Services.AddSingleton<SubmissionHub>();
+
+var connectionString = builder.Configuration.GetValue<string>("AzureWebJobsStorage");
+builder.Services.AddSingleton(_ => new BlobServiceClient(connectionString));
 
 builder.Services.Configure<AppConfig>(cfg =>
 {

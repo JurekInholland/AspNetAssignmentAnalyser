@@ -1,6 +1,8 @@
-﻿using Ionic.Zip;
+﻿using Azure;
+using Ionic.Zip;
 using Microsoft.AspNetCore.Http;
 using OpenQA.Selenium;
+using Services.BlobStorageService;
 using Services.EmailService;
 using Services.SnakeTestService;
 
@@ -11,22 +13,25 @@ public class FileUploadService : IFileUploadService
     private readonly SubmissionHub _hub;
     private readonly ISnakeTestService _snakeTestService;
     private readonly IEmailService _emailService;
+    private readonly IBlobStorageService _blobStorageService;
 
     private const string CustomCode =
         "Window.Game.getFps = () => { return framesPerSecond; }; Window.Game.eatApple = eatApple; Window.Game.getPause = () => { return pauze; }; Window.Game.getScore = () => { return score; }})(Window.Game);";
 
-    public FileUploadService(SubmissionHub hub, ISnakeTestService snakeTestService, IEmailService emailService)
+    public FileUploadService(SubmissionHub hub, ISnakeTestService snakeTestService, IEmailService emailService,
+        IBlobStorageService blobStorageService)
     {
         _hub = hub;
         _snakeTestService = snakeTestService;
         _emailService = emailService;
+        _blobStorageService = blobStorageService;
     }
 
-    public async Task SubmitFile(IFormCollection collection, int userId)
+    public async Task SubmitFile(IFormCollection collection, string userEmail)
     {
         try
         {
-            await HandleSubmission(collection);
+            await HandleSubmission(collection, userEmail);
         }
         catch (Exception e)
         {
@@ -40,10 +45,9 @@ public class FileUploadService : IFileUploadService
         }
     }
 
-    private async Task HandleSubmission(IFormCollection collection)
+    private async Task HandleSubmission(IFormCollection collection, string userEmail)
     {
-        collection.TryGetValue("connectionId", out var connectionId);
-        if (string.IsNullOrEmpty(connectionId)) throw new InvalidDataException("ConnectionId is null or empty");
+        if (!collection.TryGetValue("connectionId", out var connectionId)) throw new InvalidDataException("ConnectionId is null or empty");
 
         var files = collection.Files.ToList();
         CheckSubmission(files);
@@ -51,7 +55,7 @@ public class FileUploadService : IFileUploadService
 
         await _hub.SendStatus(connectionId!, $"{files.Count} valid files received");
 
-        await ProcessUpload(connectionId!, file);
+        await ProcessUpload(connectionId!, file, userEmail);
     }
 
     private void CheckSubmission(IReadOnlyCollection<IFormFile> files)
@@ -83,7 +87,7 @@ public class FileUploadService : IFileUploadService
         return Path.GetFullPath(path);
     }
 
-    private void InjectJavascriptCode(string path)
+    private static void InjectJavascriptCode(string path)
     {
         var gameCode = File.ReadAllLines(path);
         gameCode[^1] = CustomCode;
@@ -91,34 +95,48 @@ public class FileUploadService : IFileUploadService
     }
 
 
-    private async Task ProcessUpload(string connectionId, IFormFile file)
+    private async Task ProcessUpload(string connectionId, IFormFile file, string userEmail)
     {
         Guid id = Guid.NewGuid();
+        await _hub.SendStatus(connectionId, "extracting files");
         var path = ExtractZipFile(file, id.ToString());
-        await _hub.SendStatus(connectionId, "extraction complete");
 
         File.Copy("SnakeFiles/index.html", Path.Combine(path, "index.html"), overwrite: true);
 
         try
         {
             var report = await _snakeTestService.RunTests(path, connectionId);
-            await _hub.SendStatus(connectionId, "Tests completed");
-            await _emailService.SendTestReport(report, file);
+            report.StudentEmail = userEmail;
+            await _hub.SendStatus(connectionId, "done");
+
+            var uri = await _blobStorageService.UploadFile(file, id.ToString());
+
+            await _emailService.SendTestReport(report, uri);
         }
         catch (Exception e)
         {
-            string msg = e is JavaScriptException ? "Error during test execution." : "Something went wrong";
+            string msg = e switch
+            {
+                JavaScriptException => "Error during test execution: ",
+                InvalidCastException => "Unable to run tests: ",
+                EmailException => "Unable to send email: ",
+                RequestFailedException => "Unable to upload file: ",
+                _ => ""
+            };
+            if (msg == "")
+            {
+                Console.WriteLine("unknown error:" + e);
+            }
+
             await _hub.SendStatus(connectionId, msg + e.Message, false);
         }
         finally
         {
             CleanUp(path);
         }
-
-        Console.WriteLine("send mail");
     }
 
-    private void CleanUp(string path)
+    private static void CleanUp(string path)
     {
         Directory.Delete(path, true);
     }
@@ -130,6 +148,6 @@ public class FileUploadService : IFileUploadService
 
     private static bool IsFileSizeValid(IFormFile file)
     {
-        return file.Length is > 50000 and <= 250000; // 50kb-250kb required file size?
+        return file.Length is > 50000 and <= 200000; // 50kb-200kb required file size?
     }
 }

@@ -40,7 +40,7 @@ public class SnakeTestService : ISnakeTestService
         _options.AddArgument("--disable-gpu");
         _options.AddArgument("--disable-dev-shm-usage");
         _options.AddArgument("--window-size=1024x768");
-        // _options.AddArgument("--log-level=3");
+        _options.AddArgument("--log-level=3");
 
         new DriverManager().SetUpDriver(new ChromeConfig());
     }
@@ -53,8 +53,8 @@ public class SnakeTestService : ISnakeTestService
         _wait = new WebDriverWait(new SystemClock(), _driver, TimeSpan.FromMilliseconds(400), TimeSpan.FromMilliseconds(15));
 
         var filePath = Path.Combine(path, "index.html");
-        var url = Path.Combine("file://", filePath);
-
+        var url = "file://" + filePath;
+        _logger.LogInformation("Opening {Url}", url);
         _driver.Navigate().GoToUrl(url);
         _body = _driver.FindElement(By.XPath("html/body"));
 

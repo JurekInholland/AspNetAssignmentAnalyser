@@ -7,6 +7,14 @@ using Services.SnakeTestService;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var config = new ConfigurationBuilder()
+    .AddJsonFile("appsettings.json", true, true)
+    .AddJsonFile("appsettings.Development.json", true, true)
+    .AddEnvironmentVariables()
+    .Build();
+
+builder.Services.AddSingleton(config);
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -20,33 +28,17 @@ builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 
 builder.Services.AddSingleton<SubmissionHub>();
 
-var connectionString = builder.Configuration.GetValue<string>("AzureWebJobsStorage");
+var connectionString = config.GetValue<string>("AzureWebJobsStorage");
 if (connectionString == null) throw new Exception("AzureWebJobsStorage variable is not set");
 builder.Services.AddSingleton(_ => new BlobServiceClient(connectionString));
 
-
-builder.Services.AddSingleton<AppConfig>(provider =>
+builder.Services.Configure<AppConfig>(cfg =>
 {
-    var c = provider
-        .GetRequiredService<IConfiguration>()
-        .GetRequiredSection("MyConfiguration");
-    var config = new AppConfig
-    {
-        SendGridApiKey = builder.Configuration.GetValue<string>("SendGridApiKey") ?? string.Empty,
-        SendGridFromEmail = builder.Configuration.GetValue<string>("SendGridFromEmail") ?? string.Empty,
-        SendGridToEmail = builder.Configuration.GetValue<string>("SendGridToEmail") ?? string.Empty,
-        UserHeaderKey = builder.Configuration.GetValue<string>("UserHeaderKey") ?? "x-userid",
-    };
-    return config;
+    cfg.SendGridApiKey = config.GetValue<string>("SendGridApiKey") ?? string.Empty;
+    cfg.SendGridFromEmail = config.GetValue<string>("SendGridFromEmail") ?? string.Empty;
+    cfg.SendGridToEmail = config.GetValue<string>("SendGridToEmail") ?? string.Empty;
+    cfg.UserHeaderKey = config.GetValue<string>("UserHeaderKey") ?? "x-userid";
 });
-
-// builder.Services.Configure<AppConfig>(cfg =>
-// {
-//     cfg.SendGridApiKey = builder.Configuration.GetValue<string>("SendGridApiKey") ?? string.Empty;
-//     cfg.SendGridFromEmail = builder.Configuration.GetValue<string>("SendGridFromEmail") ?? string.Empty;
-//     cfg.SendGridToEmail = builder.Configuration.GetValue<string>("SendGridToEmail") ?? string.Empty;
-//     cfg.UserHeaderKey = builder.Configuration.GetValue<string>("UserHeaderKey") ?? "x-userid";
-// });
 
 var app = builder.Build();
 

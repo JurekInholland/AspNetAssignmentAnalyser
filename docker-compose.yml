@@ -9,8 +9,8 @@ services:
       - "8080:8080"
     environment:
       - JAVA_OPTS=-Dwebdriver.chrome.whitelistedIps=
-#      - SendGridApiKey=api-key
-#      - SendGridFromEmail=from-email
-#      - SendGridToEmail=to-email
-#      - UserHeaderKey=X-User
-#      - AzureWebJobsStorage=UseDevelopmentStorage=true
+      - SendGridApiKey=api-key
+      - SendGridFromEmail=from-email
+      - SendGridToEmail=to-email
+      - UserHeaderKey=X-User
+      - AzureWebJobsStorage=azure-storage-connection-string

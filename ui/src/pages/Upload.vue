@@ -6,9 +6,9 @@ import { IStatusMessage, ITestResult, Status } from '../models/models';
 import TestResult from '../components/TestResult.vue';
 
 const descriptionTexts = {
-    [Status.Idle]: "Welcome! Please upload your Snake Assignment code as a .zip file below. Please make sure all required files are included and that the file is no larger than 200 kB.",
-    [Status.Running]: "Your code is currently being automatically tested. This may take some time, so please wait while your submission is checked.",
-    [Status.Completed]: "Your code has been tested! Please see the results below. Please get in touch if you think there is a problem with the test results.",
+    [Status.Idle]: "Welcome! Please upload your Snake Assignment code as a .zip file below. Make sure all required files are included and that the .zip file is no larger than 200 kB.",
+    [Status.Running]: "Your code is currently being automatically tested. This may take some time. Please wait while your submission is checked.",
+    [Status.Completed]: "Check your results below. Please get in touch if you think there is a problem with the test results.",
     [Status.Error]: "Oops, there was an error while testing your code. Please see the error message below and try again."
 }
 

@@ -1,5 +1,4 @@
 ﻿using HandlebarsDotNet;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Models;
@@ -30,7 +29,7 @@ public class EmailService : IEmailService
     <a href=""{{fileUri}}"">Download submission</a>
     <p>Job id: {{id}}</p>
     <br />
-    <p>Best regards,</p><br />
+    <p>Best regards,</p>
     <p>🐍 Snake assignment analyser</p>
 </body>
 </html>";

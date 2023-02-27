@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Icon } from '@iconify/vue';
 import { useSignalR } from '@quangdao/vue-signalr';
 import { IStatusMessage, ITestResult, Status } from '../models/models';
@@ -10,10 +10,10 @@ const signalr = useSignalR();
 const state = ref(Status.Idle);
 
 const descriptionTexts = {
-    [Status.Idle]: "Please upload your .zip file containing your Snake Assignment code below. Please ensure that all required files are included in the zip file, but keep in mind that the maximum file size allowed is 200 kB. ",
-    [Status.Running]: "Your code is being tested. Please wait...",
-    [Status.Completed]: "Your code has been tested. Please see the results below.",
-    [Status.Error]: "An error occurred while testing your code. Please see the error message below."
+    [Status.Idle]: "Welcome! Please upload your Snake Assignment code as a .zip file below. Please make sure all required files are included and that the file is no larger than 200 kB.",
+    [Status.Running]: "Your code is currently being automatically tested. This may take some time, so please wait while your submission is checked.",
+    [Status.Completed]: "Your code has been tested! Please see the results below. Please get in touch if you think there is a problem with the test results.",
+    [Status.Error]: "Oops, there was an error while testing your code. Please see the error message below and try again."
 }
 
 const headline = "Snake assignment hand-in";
@@ -28,6 +28,7 @@ const currentStatus = ref("");
 const testResults = ref<Array<ITestResult>>(new Array<ITestResult>());
 const passedTests = computed(() => testResults.value.filter(t => t.passed).length);
 
+
 const testGrade = computed(() => {
     if (testResults.value.length === 0) {
         return 0;
@@ -37,7 +38,6 @@ const testGrade = computed(() => {
 
 onMounted(() => {
     signalr.on('StatusMessage', receiveStatusUpdate);
-
 })
 
 onBeforeUnmount(() => {
@@ -45,9 +45,10 @@ onBeforeUnmount(() => {
 })
 
 const receiveStatusUpdate = (message: IStatusMessage) => {
-    console.log(message)
+    console.log("M: ", message);
     if (message.status === "done") {
-        inProgress.value = false;
+        console.log("Done!")
+        // inProgress.value = false;
         state.value = Status.Completed;
         currentStatus.value = `You passed ${passedTests.value}/${testResults.value.length} tests!`;
         if (passedTests.value / testResults.value.length >= 0.7) {
@@ -56,10 +57,11 @@ const receiveStatusUpdate = (message: IStatusMessage) => {
         file.value = null;
         return;
     }
+
     if (!message.success) {
-        inProgress.value = false;
+        // inProgress.value = false;
         state.value = Status.Error;
-        // currentStatus.value = "Issue encountered";
+        currentStatus.value = "Problem encountered";
         feedback.value = message.status;
         return;
     }
@@ -68,24 +70,56 @@ const receiveStatusUpdate = (message: IStatusMessage) => {
     if (message.testResult != null) {
         testResults.value.push(message.testResult);
     }
-
 }
 
 const onChange = (e: Event) => {
     const target = e.target as HTMLInputElement;
-    if (target.files && target.files.length > 0) {
-        file.value = target.files[0];
+    feedback.value = null;
+
+    if (validateFile(target.files!)) {
+        file.value = target.files!.item(0);
     }
 };
+
+const validateFile = (files: FileList | null): boolean => {
+    dragging.value = false;
+
+    if (!files) {
+        return false;
+    }
+    if (files.length > 1) {
+        feedback.value = "Too many files. Please ensure that you only upload one file.";
+        return false;
+    }
+    const fileToValidate = files.item(0);
+    if (fileToValidate == null) {
+        return false;
+    }
+    if (fileToValidate.type !== "application/zip" && fileToValidate.type !== "application/x-zip-compressed") {
+        feedback.value = "Invalid file type. Please ensure that your file is a .zip file.";
+        return false;
+    }
+    if (fileToValidate.size > 200000) {
+        feedback.value = "File size too large. Please ensure that your file is smaller than 200 kB.";
+        return false;
+    }
+    if (fileToValidate.size < 50000) {
+        feedback.value = "File size too small. It does not look like you included all files.";
+        return false;
+    }
+    return true;
+}
+
 const removeFile = () => {
     file.value = null;
     feedback.value = null;
 };
 const upload = async () => {
 
-    inProgress.value = true;
+    // inProgress.value = true;
     const conId = signalr.connection.connectionId ?? "";
-
+    console.log("CONNECTION ID: " + conId)
+    state.value = Status.Running;
 
     if (file.value) {
         const formData = new FormData();
@@ -95,14 +129,11 @@ const upload = async () => {
             method: 'POST',
             body: formData
         });
-        if (response.ok) {
-            state.value = Status.Running;
-            // console.log("GOT RESPONSE")
-            // console.log("RATING: " + passedTests.value / testResults.value.length)
-
-        }
+        // if (response.ok) {
+        // }
     }
 };
+
 const reset = () => {
     testResults.value = new Array<ITestResult>() as ITestResult[];
     feedback.value = null;
@@ -122,6 +153,7 @@ const reset = () => {
                 {{ headline }}
             </h1>
         </article>
+        <h2 v-if="currentStatus">{{ currentStatus }}</h2>
         <p>{{ descriptionTexts[state] }}</p>
 
         <p class="feedback" v-if="feedback">{{ feedback }}</p>
@@ -150,13 +182,12 @@ const reset = () => {
 
         <div v-else>
             <article>
-                <span v-if="inProgress" class="loader"></span>
-                <h2>{{ currentStatus }}</h2>
+                <span v-if="state === Status.Running" class="loader"></span>
             </article>
             <ul v-auto-animate>
                 <TestResult v-for="res in testResults" :key="res.name" :testResult="res" />
             </ul>
-            <button v-if="testGrade < 1 && !inProgress" class="btn2" @click="reset">
+            <button v-if="testGrade < 1 && state !== Status.Running" class="btn2" @click="reset">
                 Try Again
             </button>
         </div>

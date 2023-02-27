@@ -46,52 +46,38 @@ public class FileUploadService : IFileUploadService
     {
         CheckSubmission(collection.Files.ToList());
         if (!collection.TryGetValue("connectionId", out var connectionId)) throw new InvalidDataException("ConnectionId is null or empty");
-        _connectionId = connectionId.ToString();
 
         var stream = await collection.Files[0].GetStream();
-        ExecuteInBackground(stream, userEmail);
+        ExecuteInBackground(stream, userEmail, connectionId.ToString());
     }
 
 
     /// <summary>
     /// Safely execute the file upload/processing in a background thread
     /// </summary>
-    private void ExecuteInBackground(MemoryStream stream, string userEmail)
+    private void ExecuteInBackground(MemoryStream stream, string userEmail, string connectionId)
     {
         _applicationLifetime.ApplicationStarted.Register(() =>
         {
-            Task.Run(async () => await ProcessUpload(_connectionId, stream, userEmail)).ContinueWith(async task =>
+            Task.Run(async () => await ProcessUpload(connectionId, stream, userEmail)).ContinueWith(async task =>
             {
                 if (task.IsFaulted)
                 {
                     _logger.LogError("BACKGROUND TASK FAILED: {TaskException}", task.Exception);
 
                     // collection.TryGetValue("connectionId", out var connectionId);
-                    await _hub.SendStatus(_connectionId, $"Error: {task.Exception?.Message}", false);
-                    throw new Exception("BACKGROUND TASK FAILED", task.Exception);
+                    await _hub.SendStatus(connectionId, $"Error: {task.Exception?.Message}", false);
+                    // throw new Exception("BACKGROUND TASK FAILED", task.Exception);
                 }
             });
         });
     }
 
-    // private async Task HandleSubmission(MemoryStream stream, string userEmail)
-    // {
-    //     if (!collection.TryGetValue("connectionId", out var connectionId)) throw new InvalidDataException("ConnectionId is null or empty");
-    //
-    //     var files = collection.Files.ToList();
-    //     CheckSubmission(files);
-    //     var file = files.First();
-    //
-    //     await _hub.SendStatus(connectionId!, $"{files.Count} valid files received");
-    //
-    //     await ProcessUpload(connectionId!, file, userEmail);
-    // }
-
     private void CheckSubmission(IReadOnlyCollection<IFormFile> files)
     {
         if (files.Count != 1) throw new InvalidDataException("Only one file is allowed");
-        if (!IsFileTypeValid(files.First())) throw new InvalidDataException("Invalid files.First() type");
-        if (!IsFileSizeValid(files.First())) throw new InvalidDataException("Invalid files.First() size");
+        if (!IsFileTypeValid(files.First())) throw new InvalidDataException("Invalid file type");
+        if (!IsFileSizeValid(files.First())) throw new InvalidDataException("Invalid file size");
     }
 
     /// <summary>
@@ -128,13 +114,13 @@ public class FileUploadService : IFileUploadService
     private async Task ProcessUpload(string connectionId, MemoryStream stream, string userEmail)
     {
         Guid id = Guid.NewGuid();
-        await _hub.SendStatus(connectionId, "extracting files");
-        var path = ExtractZipFile(stream, id.ToString());
-
-        File.Copy("SnakeFiles/index.html", Path.Combine(path, "index.html"), overwrite: true);
-
+        await _hub.SendStatus(connectionId, "Extracting files");
+        string? path = null;
         try
         {
+            path = ExtractZipFile(stream, id.ToString());
+            File.Copy("SnakeFiles/index.html", Path.Combine(path, "index.html"), overwrite: true);
+
             var report = await _snakeTestService.RunTests(id, connectionId);
             report.StudentEmail = userEmail;
             await _hub.SendStatus(connectionId, "done");
@@ -153,6 +139,7 @@ public class FileUploadService : IFileUploadService
                 InvalidCastException => "Unable to run tests: ",
                 EmailException => "Unable to send email: ",
                 RequestFailedException => "Unable to upload file: ",
+                ZipException => "Unable to extract file: ",
                 _ => ""
             };
             if (msg == "")
@@ -168,9 +155,9 @@ public class FileUploadService : IFileUploadService
         }
     }
 
-    private static void CleanUp(string path)
+    private static void CleanUp(string? path)
     {
-        Directory.Delete(path, true);
+        if (path is not null) Directory.Delete(path, true);
     }
 
     private bool IsFileTypeValid(IFormFile file)

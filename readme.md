@@ -39,7 +39,7 @@ git clone https://github.com/JurekInholland/AspNetAssignmentAnalyser.git && cd A
 ```
 
 ### Local development
-
+If you are using azurite, make sure to pass `azurite --skipApiVersionCheck`
 ```sh
 # from project root
 cd Api
@@ -47,7 +47,7 @@ dotnet watch
 
 cd ui
 npm install && npm run dev
-open localhost:5173
+open http://localhost:5173
 ```
 
 ### Deploy without docker

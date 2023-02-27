@@ -26,14 +26,13 @@ public class UploadController : BaseController
     public async Task<IActionResult> UploadZip(IFormCollection collection)
     {
         var userEmail = ParseRequestHeader(_config.UserHeaderKey) ?? "Unkown user";
-
-        await Task.Run(() => { _fileUploadService.SubmitFile(collection, userEmail); });
+        await _fileUploadService.SubmitFile(collection, userEmail);
         return new OkObjectResult("Test started");
     }
 
     private string? ParseRequestHeader(string headerKey)
     {
-        DebugLogReqHeaders();
+        // DebugLogReqHeaders();
         return Request.Headers.TryGetValue(headerKey, out var headerValue) ? headerValue.ToString() : null;
     }
 

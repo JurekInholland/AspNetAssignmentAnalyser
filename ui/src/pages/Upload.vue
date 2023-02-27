@@ -37,12 +37,17 @@ onBeforeUnmount(() => {
 
 const receiveStatusUpdate = (message: IStatusMessage) => {
     console.log(message)
-    if (!message.success || message.status === "done") {
+    if (message.status === "done") {
         inProgress.value = false;
+        return;
     }
-    if (!message.success && message.status !== "done") {
+    if (!message.success) {
+        inProgress.value = false;
+        currentStatus.value = "Issue encountered";
         feedback.value = message.status;
+        return;
     }
+
     currentStatus.value = message.status
     if (message.testResult != null) {
         testResults.value.push(message.testResult);

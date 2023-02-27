@@ -5,10 +5,6 @@ import { useSignalR } from '@quangdao/vue-signalr';
 import { IStatusMessage, ITestResult, Status } from '../models/models';
 import TestResult from '../components/TestResult.vue';
 
-const signalr = useSignalR();
-
-const state = ref(Status.Idle);
-
 const descriptionTexts = {
     [Status.Idle]: "Welcome! Please upload your Snake Assignment code as a .zip file below. Please make sure all required files are included and that the file is no larger than 200 kB.",
     [Status.Running]: "Your code is currently being automatically tested. This may take some time, so please wait while your submission is checked.",
@@ -17,17 +13,16 @@ const descriptionTexts = {
 }
 
 const headline = "Snake assignment hand-in";
-// const infoText = "Please upload your .zip file containing your Snake Assignment code below. Please ensure that all required files are included in the zip file, but keep in mind that the maximum file size allowed is 200 kB. ";
+const signalr = useSignalR();
+const state = ref(Status.Idle);
 const feedback = ref<string | null>(null);
 const file = ref<File | null>(null);
 const dragging = ref(false);
-const inProgress = ref(false);
 
 const currentStatus = ref("");
 
 const testResults = ref<Array<ITestResult>>(new Array<ITestResult>());
 const passedTests = computed(() => testResults.value.filter(t => t.passed).length);
-
 
 const testGrade = computed(() => {
     if (testResults.value.length === 0) {
@@ -45,10 +40,7 @@ onBeforeUnmount(() => {
 })
 
 const receiveStatusUpdate = (message: IStatusMessage) => {
-    console.log("M: ", message);
     if (message.status === "done") {
-        console.log("Done!")
-        // inProgress.value = false;
         state.value = Status.Completed;
         currentStatus.value = `You passed ${passedTests.value}/${testResults.value.length} tests!`;
         if (passedTests.value / testResults.value.length >= 0.7) {
@@ -59,7 +51,6 @@ const receiveStatusUpdate = (message: IStatusMessage) => {
     }
 
     if (!message.success) {
-        // inProgress.value = false;
         state.value = Status.Error;
         currentStatus.value = "Problem encountered";
         feedback.value = message.status;
@@ -115,10 +106,7 @@ const removeFile = () => {
     feedback.value = null;
 };
 const upload = async () => {
-
-    // inProgress.value = true;
     const conId = signalr.connection.connectionId ?? "";
-    console.log("CONNECTION ID: " + conId)
     state.value = Status.Running;
 
     if (file.value) {
@@ -129,8 +117,9 @@ const upload = async () => {
             method: 'POST',
             body: formData
         });
-        // if (response.ok) {
-        // }
+        if (!response.ok) {
+            state.value = Status.Error;
+        }
     }
 };
 

@@ -1,6 +1,6 @@
 ﻿# 🐍 Snake assignment analyser
 
-![image](https://user-images.githubusercontent.com/42969112/221482360-3759327e-1f04-495c-a3fc-ab10d7bb45ec.png)
+![image](https://user-images.githubusercontent.com/42969112/221485863-78f74ae4-bd52-48cd-a953-5e6ffd131aef.png)
 
 ## Introduction
 

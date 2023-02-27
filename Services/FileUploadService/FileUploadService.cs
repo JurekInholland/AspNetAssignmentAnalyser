@@ -23,7 +23,7 @@ public class FileUploadService : IFileUploadService
     private const string CustomCode =
         "Window.Game.getFps = () => { return frameCounterLimit; }; Window.Game.eatApple = eatApple; Window.Game.getPause = () => { return pauze; }; Window.Game.getScore = () => { return score; }})(Window.Game);";
 
-    private string _connectionId;
+    private string _connectionId = "";
 
     public FileUploadService(ILogger<FileUploadService> logger, SubmissionHub hub, ISnakeTestService snakeTestService,
         IEmailService emailService,
@@ -48,19 +48,19 @@ public class FileUploadService : IFileUploadService
         if (!collection.TryGetValue("connectionId", out var connectionId)) throw new InvalidDataException("ConnectionId is null or empty");
         _connectionId = connectionId.ToString();
 
-        ExecuteInBackground(collection.Files[0], userEmail);
+        var stream = await collection.Files[0].GetStream();
+        ExecuteInBackground(stream, userEmail);
     }
 
 
     /// <summary>
     /// Safely execute the file upload/processing in a background thread
     /// </summary>
-    private void ExecuteInBackground(IFormFile file, string userEmail)
+    private void ExecuteInBackground(MemoryStream stream, string userEmail)
     {
-
         _applicationLifetime.ApplicationStarted.Register(() =>
         {
-            Task.Run(async () => await ProcessUpload(_connectionId, file, userEmail)).ContinueWith(async task =>
+            Task.Run(async () => await ProcessUpload(_connectionId, stream, userEmail)).ContinueWith(async task =>
             {
                 if (task.IsFaulted)
                 {
@@ -124,9 +124,8 @@ public class FileUploadService : IFileUploadService
     }
 
 
-    private async Task ProcessUpload(string connectionId, IFormFile file, string userEmail)
+    private async Task ProcessUpload(string connectionId, MemoryStream stream, string userEmail)
     {
-        var stream = await file.GetStream();
         Guid id = Guid.NewGuid();
         await _hub.SendStatus(connectionId, "extracting files");
         var path = ExtractZipFile(stream, id.ToString());
@@ -141,7 +140,7 @@ public class FileUploadService : IFileUploadService
 
 
             var fileName = id + ".zip";
-            var uri = await _blobStorageService.UploadFile(stream, fileName, file.ContentType);
+            var uri = await _blobStorageService.UploadFile(stream, fileName, "application/x-zip-compressed");
 
             await _emailService.SendTestReport(report, uri);
         }

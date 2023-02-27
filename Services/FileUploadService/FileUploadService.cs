@@ -100,6 +100,7 @@ public class FileUploadService : IFileUploadService
     /// <returns>Absolute path to the extracted directory</returns>
     private string ExtractZipFile(MemoryStream stream, string targetDirectory)
     {
+        stream.Position = 0;
         string path = Path.Combine("upload", targetDirectory);
         Directory.CreateDirectory(path);
         using var zip = ZipFile.Read(stream);

@@ -22,6 +22,7 @@ public class BlobStorageService : IBlobStorageService
     /// <returns>Uri to blob</returns>
     public async Task<string> UploadFile(MemoryStream stream, string fileName, string contentType)
     {
+        stream.Position = 0;
         var blobClient = _blobContainerClient.GetBlobClient(fileName);
         await blobClient.UploadAsync(stream, overwrite: true);
         await blobClient.SetHttpHeadersAsync(new BlobHttpHeaders {ContentType = contentType});

@@ -65,25 +65,7 @@ public class EmailService : IEmailService
 
         if (html is null) throw new EmailException("Error during email creation");
         return html;
-        // var engine = new RazorLightEngineBuilder()
-        //     .UseEmbeddedResourcesProject(System.Reflection.Assembly.GetEntryAssembly())
-        //     .UseMemoryCachingProvider()
-        //     .Build();
-        // // await engine.CompileRenderAsync("Headline", "Headline");
-        // return engine.CompileRenderAsync("Body", report).Result;
     }
-
-    // private static async Task<string> CreateAttachment(IFormFile file)
-    // {
-    //     byte[] fileBytes;
-    //     using (var memoryStream = new MemoryStream())
-    //     {
-    //         await file.CopyToAsync(memoryStream);
-    //         fileBytes = memoryStream.ToArray();
-    //     }
-    //
-    //     return Convert.ToBase64String(fileBytes);
-    // }
 
     public async Task SendMail(string to, string subject, string body)
     {

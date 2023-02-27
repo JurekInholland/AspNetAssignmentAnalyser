@@ -26,12 +26,4 @@ public class PageController : BaseController
             StatusCode = 200
         };
     }
-
-    [HttpGet("api/test", Name = nameof(Test))]
-    public async Task<IActionResult> Test()
-    {
-        await _hubContext.Clients.All.SendAsync("ReceiveMessage", "testmessage");
-
-        return new OkObjectResult("Test");
-    }
 }

@@ -32,24 +32,6 @@ public class UploadController : BaseController
 
     private string? ParseRequestHeader(string headerKey)
     {
-        // DebugLogReqHeaders();
         return Request.Headers.TryGetValue(headerKey, out var headerValue) ? headerValue.ToString() : null;
-    }
-
-    private void DebugLogReqHeaders()
-    {
-        _logger.LogInformation("Parsing request header");
-        foreach (var header in Request.Headers)
-        {
-            _logger.LogInformation("{HeaderKey}: {HeaderValue}", header.Key, header.Value);
-        }
-    }
-
-    [HttpGet("test", Name = nameof(TestSndMail))]
-    public async Task<IActionResult> TestSndMail()
-    {
-        await _emailService.SendMail("jurekstuff@gmail.com", "hello", "lello schmello");
-
-        return new OkObjectResult("Email sent");
     }
 }

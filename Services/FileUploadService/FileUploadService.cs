@@ -23,7 +23,6 @@ public class FileUploadService : IFileUploadService
     private const string CustomCode =
         "Window.Game.getFps = () => { return frameCounterLimit; }; Window.Game.eatApple = eatApple; Window.Game.getPause = () => { return pauze; }; Window.Game.getScore = () => { return score; }})(Window.Game);";
 
-    private string _connectionId = "";
 
     public FileUploadService(ILogger<FileUploadService> logger, SubmissionHub hub, ISnakeTestService snakeTestService,
         IEmailService emailService,
@@ -37,11 +36,6 @@ public class FileUploadService : IFileUploadService
         _applicationLifetime = applicationLifetime;
     }
 
-    /// <summary>
-    ///    Submit a file to the server; This method is run in a background thread
-    /// </summary>
-    /// <param name="collection"></param>
-    /// <param name="userEmail"></param>
     public async Task SubmitFile(IFormCollection collection, string userEmail)
     {
         CheckSubmission(collection.Files.ToList());
@@ -64,10 +58,7 @@ public class FileUploadService : IFileUploadService
                 if (task.IsFaulted)
                 {
                     _logger.LogError("BACKGROUND TASK FAILED: {TaskException}", task.Exception);
-
-                    // collection.TryGetValue("connectionId", out var connectionId);
                     await _hub.SendStatus(connectionId, $"Error: {task.Exception?.Message}", false);
-                    // throw new Exception("BACKGROUND TASK FAILED", task.Exception);
                 }
             });
         });
@@ -84,7 +75,7 @@ public class FileUploadService : IFileUploadService
     /// Extract a given zip file into a given directory
     /// </summary>
     /// <returns>Absolute path to the extracted directory</returns>
-    private string ExtractZipFile(MemoryStream stream, string targetDirectory)
+    private string ExtractZipFile(Stream stream, string targetDirectory)
     {
         stream.Position = 0;
         string path = Path.Combine("upload", targetDirectory);

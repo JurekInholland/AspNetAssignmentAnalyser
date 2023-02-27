@@ -33,8 +33,6 @@ public class SnakeTestService : ISnakeTestService
             IsGoldenAppleImplemented,
         };
 
-        // _options.SetLoggingPreference(LogType.Browser, LogLevel.Warning);
-        // _options.SetLoggingPreference(LogType.Driver, LogLevel.Warning);
         _options.AddArgument("--headless");
         _options.AddArgument("--no-sandbox");
         _options.AddArgument("--disable-gpu");

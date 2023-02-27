@@ -2,13 +2,22 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Icon } from '@iconify/vue';
 import { useSignalR } from '@quangdao/vue-signalr';
-import { IStatusMessage, ITestResult } from '../models/models';
+import { IStatusMessage, ITestResult, Status } from '../models/models';
 import TestResult from '../components/TestResult.vue';
 
 const signalr = useSignalR();
 
+const state = ref(Status.Idle);
+
+const descriptionTexts = {
+    [Status.Idle]: "Please upload your .zip file containing your Snake Assignment code below. Please ensure that all required files are included in the zip file, but keep in mind that the maximum file size allowed is 200 kB. ",
+    [Status.Running]: "Your code is being tested. Please wait...",
+    [Status.Completed]: "Your code has been tested. Please see the results below.",
+    [Status.Error]: "An error occurred while testing your code. Please see the error message below."
+}
+
 const headline = "Snake assignment hand-in";
-const infoText = "Please upload your .zip file containing your Snake Assignment code below. Please ensure that all required files are included in the zip file, but keep in mind that the maximum file size allowed is 200 kB. ";
+// const infoText = "Please upload your .zip file containing your Snake Assignment code below. Please ensure that all required files are included in the zip file, but keep in mind that the maximum file size allowed is 200 kB. ";
 const feedback = ref<string | null>(null);
 const file = ref<File | null>(null);
 const dragging = ref(false);
@@ -39,6 +48,7 @@ const receiveStatusUpdate = (message: IStatusMessage) => {
     console.log(message)
     if (message.status === "done") {
         inProgress.value = false;
+        state.value = Status.Completed;
         currentStatus.value = `You passed ${passedTests.value}/${testResults.value.length} tests!`;
         if (passedTests.value / testResults.value.length >= 0.7) {
             currentStatus.value = currentStatus.value.replace("You", "Congratulations, you")
@@ -48,6 +58,7 @@ const receiveStatusUpdate = (message: IStatusMessage) => {
     }
     if (!message.success) {
         inProgress.value = false;
+        state.value = Status.Error;
         // currentStatus.value = "Issue encountered";
         feedback.value = message.status;
         return;
@@ -59,7 +70,6 @@ const receiveStatusUpdate = (message: IStatusMessage) => {
     }
 
 }
-
 
 const onChange = (e: Event) => {
     const target = e.target as HTMLInputElement;
@@ -86,18 +96,21 @@ const upload = async () => {
             body: formData
         });
         if (response.ok) {
+            state.value = Status.Running;
             // console.log("GOT RESPONSE")
             // console.log("RATING: " + passedTests.value / testResults.value.length)
 
         }
     }
 };
-function reset() {
+const reset = () => {
     testResults.value = new Array<ITestResult>() as ITestResult[];
     feedback.value = null;
     currentStatus.value = "";
     file.value = null;
+    state.value = Status.Idle;
 }
+
 </script>
 
 <template>
@@ -109,7 +122,7 @@ function reset() {
                 {{ headline }}
             </h1>
         </article>
-        <p>{{ infoText }}</p>
+        <p>{{ descriptionTexts[state] }}</p>
 
         <p class="feedback" v-if="feedback">{{ feedback }}</p>
 

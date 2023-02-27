@@ -22,15 +22,15 @@ public class EmailService : IEmailService
 <body>
     <h1>{{heading}}</h1>
     <h3>{{student}} has submitted the snake assignment</h3>
+    <p>Submitted on {{submissionTime}}</p>
     {{#each items}}
         <p> <span style='font-weight: bold;'>{{this.number}}</span> - {{this.name}}: <span style='font-weight:bold;'>{{this.passed}}</span></p>
     {{/each}}
-<h3>Score: {{score}} </h3>
-    <br />
+    <h3>Score: {{score}}% </h3>
     <a href=""{{fileUri}}"">Download submission</a>
     <p>Job id: {{id}}</p>
     <br />
-    <p>Best regards,</p>
+    <p>Best regards,</p><br />
     <p>🐍 Snake assignment analyser</p>
 </body>
 </html>";
@@ -60,6 +60,7 @@ public class EmailService : IEmailService
             items = report.Results,
             student = report.StudentEmail,
             score = report.Score,
+            submissionTime = report.SubmissionTime.ToString("dd.MM.yy HH:mm:ss"),
             fileUri
         });
 

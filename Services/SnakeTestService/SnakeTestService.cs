@@ -46,14 +46,13 @@ public class SnakeTestService : ISnakeTestService
     }
 
 
-    public async Task<TestReport> RunTests(string path, string connectionId)
+    public async Task<TestReport> RunTests(Guid id, string connectionId)
     {
         _driver = new ChromeDriver(_options);
         _js = (IJavaScriptExecutor) _driver;
         _wait = new WebDriverWait(new SystemClock(), _driver, TimeSpan.FromMilliseconds(400), TimeSpan.FromMilliseconds(15));
 
-        var filePath = Path.Combine(path, "index.html");
-        var url = "file://" + filePath;
+        var url = GetFileUrl(id);
         _logger.LogInformation("Opening {Url}", url);
         _driver.Navigate().GoToUrl(url);
         _body = _driver.FindElement(By.XPath("html/body"));
@@ -82,18 +81,23 @@ public class SnakeTestService : ISnakeTestService
             await _hub.SendTestResult(connectionId, testResult);
         }
 
-        // var testRes = new TestResult(11, false);
-        // await _hub.SendTestResult(connectionId, testRes);
-
         _driver.Close();
         _driver.Quit();
         return new TestReport
         {
-            Id = Guid.NewGuid(),
+            Id = id,
+            SubmissionTime = DateTime.Now,
             Results = results,
         };
     }
 
+    private string GetFileUrl(Guid id)
+    {
+        var path = Path.GetFullPath(Path.Combine("upload", id.ToString()));
+        var filePath = Path.Combine(path, "index.html");
+        var url = "file://" + filePath;
+        return url;
+    }
 
     private object? ExecuteScript(string script, params object[] args)
     {

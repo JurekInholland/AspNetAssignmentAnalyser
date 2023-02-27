@@ -4,5 +4,5 @@ namespace Services.SnakeTestService;
 
 public interface ISnakeTestService
 {
-    public Task<TestReport> RunTests(string path, string conId);
+    public Task<TestReport> RunTests(Guid id, string conId);
 }

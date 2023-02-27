@@ -135,7 +135,7 @@ public class FileUploadService : IFileUploadService
 
         try
         {
-            var report = await _snakeTestService.RunTests(path, connectionId);
+            var report = await _snakeTestService.RunTests(id, connectionId);
             report.StudentEmail = userEmail;
             await _hub.SendStatus(connectionId, "done");
 

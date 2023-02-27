@@ -206,7 +206,7 @@ public class SnakeTestService : ISnakeTestService
         ExecuteScript("Window.Game.eatApple();");
         var pointRewards = ExecuteScript("return Window.Game.getScore()") as long?;
 
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 200; i++)
         {
             Thread.Sleep(1);
             ExecuteScript("Window.Game.eatApple();");

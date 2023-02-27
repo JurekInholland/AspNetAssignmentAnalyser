@@ -1,30 +1,40 @@
 ﻿using Azure;
 using Ionic.Zip;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
 using Services.BlobStorageService;
 using Services.EmailService;
+using Services.Extensions;
 using Services.SnakeTestService;
 
 namespace Services.FileUploadService;
 
 public class FileUploadService : IFileUploadService
 {
+    private readonly ILogger<FileUploadService> _logger;
     private readonly SubmissionHub _hub;
     private readonly ISnakeTestService _snakeTestService;
     private readonly IEmailService _emailService;
     private readonly IBlobStorageService _blobStorageService;
+    private readonly IApplicationLifetime _applicationLifetime;
 
     private const string CustomCode =
         "Window.Game.getFps = () => { return frameCounterLimit; }; Window.Game.eatApple = eatApple; Window.Game.getPause = () => { return pauze; }; Window.Game.getScore = () => { return score; }})(Window.Game);";
 
-    public FileUploadService(SubmissionHub hub, ISnakeTestService snakeTestService, IEmailService emailService,
-        IBlobStorageService blobStorageService)
+    private string _connectionId;
+
+    public FileUploadService(ILogger<FileUploadService> logger, SubmissionHub hub, ISnakeTestService snakeTestService,
+        IEmailService emailService,
+        IBlobStorageService blobStorageService, IApplicationLifetime applicationLifetime)
     {
+        _logger = logger;
         _hub = hub;
         _snakeTestService = snakeTestService;
         _emailService = emailService;
         _blobStorageService = blobStorageService;
+        _applicationLifetime = applicationLifetime;
     }
 
     /// <summary>
@@ -34,34 +44,48 @@ public class FileUploadService : IFileUploadService
     /// <param name="userEmail"></param>
     public async Task SubmitFile(IFormCollection collection, string userEmail)
     {
-        try
-        {
-            await HandleSubmission(collection, userEmail);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
-            collection.TryGetValue("connectionId", out var connectionId);
-            await _hub.SendStatus(connectionId!, $"Error: {e.Message}", false);
-        }
-        finally
-        {
-            Console.WriteLine("finally");
-        }
-    }
-
-    private async Task HandleSubmission(IFormCollection collection, string userEmail)
-    {
+        CheckSubmission(collection.Files.ToList());
         if (!collection.TryGetValue("connectionId", out var connectionId)) throw new InvalidDataException("ConnectionId is null or empty");
+        _connectionId = connectionId.ToString();
 
-        var files = collection.Files.ToList();
-        CheckSubmission(files);
-        var file = files.First();
-
-        await _hub.SendStatus(connectionId!, $"{files.Count} valid files received");
-
-        await ProcessUpload(connectionId!, file, userEmail);
+        ExecuteInBackground(collection.Files[0], userEmail);
     }
+
+
+    /// <summary>
+    /// Safely execute the file upload/processing in a background thread
+    /// </summary>
+    private void ExecuteInBackground(IFormFile file, string userEmail)
+    {
+
+        _applicationLifetime.ApplicationStarted.Register(() =>
+        {
+            Task.Run(async () => await ProcessUpload(_connectionId, file, userEmail)).ContinueWith(async task =>
+            {
+                if (task.IsFaulted)
+                {
+                    _logger.LogError("BACKGROUND TASK FAILED: {TaskException}", task.Exception);
+
+                    // collection.TryGetValue("connectionId", out var connectionId);
+                    await _hub.SendStatus(_connectionId, $"Error: {task.Exception?.Message}", false);
+                    throw new Exception("BACKGROUND TASK FAILED", task.Exception);
+                }
+            });
+        });
+    }
+
+    // private async Task HandleSubmission(MemoryStream stream, string userEmail)
+    // {
+    //     if (!collection.TryGetValue("connectionId", out var connectionId)) throw new InvalidDataException("ConnectionId is null or empty");
+    //
+    //     var files = collection.Files.ToList();
+    //     CheckSubmission(files);
+    //     var file = files.First();
+    //
+    //     await _hub.SendStatus(connectionId!, $"{files.Count} valid files received");
+    //
+    //     await ProcessUpload(connectionId!, file, userEmail);
+    // }
 
     private void CheckSubmission(IReadOnlyCollection<IFormFile> files)
     {
@@ -74,11 +98,11 @@ public class FileUploadService : IFileUploadService
     /// Extract a given zip file into a given directory
     /// </summary>
     /// <returns>Absolute path to the extracted directory</returns>
-    private string ExtractZipFile(IFormFile file, string targetDirectory)
+    private string ExtractZipFile(MemoryStream stream, string targetDirectory)
     {
         string path = Path.Combine("upload", targetDirectory);
         Directory.CreateDirectory(path);
-        using var zip = ZipFile.Read(file.OpenReadStream());
+        using var zip = ZipFile.Read(stream);
         zip.FlattenFoldersOnExtract = true;
 
         foreach (var entry in zip)
@@ -102,9 +126,10 @@ public class FileUploadService : IFileUploadService
 
     private async Task ProcessUpload(string connectionId, IFormFile file, string userEmail)
     {
+        var stream = await file.GetStream();
         Guid id = Guid.NewGuid();
         await _hub.SendStatus(connectionId, "extracting files");
-        var path = ExtractZipFile(file, id.ToString());
+        var path = ExtractZipFile(stream, id.ToString());
 
         File.Copy("SnakeFiles/index.html", Path.Combine(path, "index.html"), overwrite: true);
 
@@ -115,9 +140,6 @@ public class FileUploadService : IFileUploadService
             await _hub.SendStatus(connectionId, "done");
 
 
-            using var stream = new MemoryStream();
-            await file.CopyToAsync(stream);
-            stream.Position = 0;
             var fileName = id + ".zip";
             var uri = await _blobStorageService.UploadFile(stream, fileName, file.ContentType);
 

@@ -1,5 +1,7 @@
 ﻿# 🐍 Snake assignment analyser
 
+![image](https://user-images.githubusercontent.com/42969112/221482360-3759327e-1f04-495c-a3fc-ab10d7bb45ec.png)
+
 ## Introduction
 
 This is a web application built with Asp .Net Core 7, Vue.js 3, SignalR, Selenium, SendGrid, and Docker. It's designed for potential IT

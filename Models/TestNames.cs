@@ -12,8 +12,9 @@ public static class TestNames
         {6, "Snake can move right"},
         {7, "Edge collision has been implemented"},
         {8, "Score is increased by eating apples"},
-        {9, "Snake color is randomized"},
-        {10, "Golden apple has been implemented"},
+        {9, "Snake speed increases"},
+        {10, "Snake color is randomized"},
+        {11, "Golden apple has been implemented"},
     };
 
     public static string GetName(int testNumber)

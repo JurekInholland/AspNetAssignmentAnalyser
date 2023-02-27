@@ -69,16 +69,16 @@ public class SnakeTestService : ISnakeTestService
         }
 
         List<TestResult> results = new();
-        for (int i = 1; i < _testMethods.Length; i++)
+        for (int i = 0; i < _testMethods.Length; i++)
         {
             var methodName = _testMethods[i].Method.Name;
 
             Thread.Sleep(100);
             var passed = _testMethods[i]();
-            var testResult = new TestResult(i, passed);
+            var testResult = new TestResult(i + 1, passed);
             results.Add(testResult);
 
-            _logger.LogInformation("Test {I} - {MethodName} [{Passed}]", i, methodName, passed);
+            _logger.LogInformation("Test {I} - {MethodName} [{Passed}]", i + 1, methodName, passed);
             await _hub.SendTestResult(connectionId, testResult);
         }
 
@@ -134,7 +134,7 @@ public class SnakeTestService : ISnakeTestService
     {
         try
         {
-            return ExecuteScript("return Window.Game.getFps()") is long and < 30;
+            return ExecuteScript("return Window.Game.getFps()") is long and < 30 and > 0;
         }
         catch (WebDriverException)
         {
@@ -145,37 +145,32 @@ public class SnakeTestService : ISnakeTestService
     private bool IsEdgeCollisionImplemented()
     {
         ExecuteScript("Window.Game.Reset();");
-        Thread.Sleep(1);
-        ExecuteScript("Window.Game.eatApple();");
-        Thread.Sleep(1);
+        Thread.Sleep(50);
+        var appleX = ExecuteScript("return apple.x") as long?;
+        var appleY = ExecuteScript("return apple.y") as long?;
 
 
         TriggerKey(Keys.Up);
-        try
-        {
-            _wait.Until(d => ((IJavaScriptExecutor) d).ExecuteScript("return Window.Game.getScore()").ToString()!.Equals("0"));
-            return true;
-        }
-        catch (WebDriverTimeoutException e)
-        {
-            Console.WriteLine("Edge collision not implemented " + e);
-            return false;
-        }
+        Thread.Sleep(50);
+        var newAppleX = ExecuteScript("return apple.x") as long?;
+        var newAppleY = ExecuteScript("return apple.y") as long?;
+
+        return appleX != newAppleX || appleY != newAppleY;
     }
 
     private bool IsScoreIncreasedByApple()
     {
         ExecuteScript("Window.Game.Reset();");
-        Thread.Sleep(1);
+        Thread.Sleep(50);
 
         var score = ExecuteScript("return Window.Game.getScore()") as long?;
 
         ExecuteScript("Window.Game.eatApple();");
-        Thread.Sleep(1);
+        Thread.Sleep(50);
 
         var finalScore = ExecuteScript("return Window.Game.getScore()") as long?;
 
-        return finalScore > score;
+        return finalScore > score && finalScore > 0;
     }
 
     private bool IsSnakeColorRandomized()

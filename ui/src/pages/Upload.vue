@@ -16,7 +16,7 @@ const inProgress = ref(false);
 
 const currentStatus = ref("");
 
-const testResults = ref<ITestResult[]>(new Array<ITestResult>() as ITestResult[]);
+const testResults = ref<Array<ITestResult>>(new Array<ITestResult>());
 const passedTests = computed(() => testResults.value.filter(t => t.passed).length);
 
 const testGrade = computed(() => {
@@ -39,11 +39,16 @@ const receiveStatusUpdate = (message: IStatusMessage) => {
     console.log(message)
     if (message.status === "done") {
         inProgress.value = false;
+        currentStatus.value = `You passed ${passedTests.value}/${testResults.value.length} tests!`;
+        if (passedTests.value / testResults.value.length >= 0.7) {
+            currentStatus.value = currentStatus.value.replace("You", "Congratulations, you")
+        }
+        file.value = null;
         return;
     }
     if (!message.success) {
         inProgress.value = false;
-        currentStatus.value = "Issue encountered";
+        // currentStatus.value = "Issue encountered";
         feedback.value = message.status;
         return;
     }
@@ -81,14 +86,9 @@ const upload = async () => {
             body: formData
         });
         if (response.ok) {
-            console.log("GOT RESPONSE")
-            currentStatus.value = `You passed ${passedTests.value}/${testResults.value.length} tests!`;
-            console.log("RATING: " + passedTests.value / testResults.value.length)
+            // console.log("GOT RESPONSE")
+            // console.log("RATING: " + passedTests.value / testResults.value.length)
 
-            if (passedTests.value / testResults.value.length >= 0.7) {
-                currentStatus.value = currentStatus.value.replace("You", "Congratulations, you")
-            }
-            file.value = null;
         }
     }
 };
@@ -141,9 +141,7 @@ function reset() {
                 <h2>{{ currentStatus }}</h2>
             </article>
             <ul v-auto-animate>
-                <li v-for=" res of testResults">
-                    <TestResult :testResult="res" />
-                </li>
+                <TestResult v-for="res in testResults" :key="res.name" :testResult="res" />
             </ul>
             <button v-if="testGrade < 1 && !inProgress" class="btn2" @click="reset">
                 Try Again
@@ -157,6 +155,7 @@ ul {
     list-style-type: none;
     margin: 0;
     padding: 0;
+    position: unset;
 }
 
 li {
@@ -167,12 +166,12 @@ article {
     display: flex;
     align-items: center;
     gap: 1rem;
-    flex-wrap: wrap;
 }
 
 article>svg {
-    min-width: 3rem;
-    min-height: 3rem;
+    width: 3.5rem;
+    height: 3.5rem;
+    flex-shrink: 0;
+    gap: 1rem;
 }
-
 </style>

@@ -9,7 +9,7 @@ WORKDIR /app
 COPY . .
 RUN dotnet publish Api/Api.csproj -c Release -o out --self-contained -r linux-x64 /p:PublishTrimmed=true /p:PublishSingleFile=true
 
-FROM selenium/standalone-chrome
+FROM selenium/standalone-chrome:110.0
 WORKDIR /app
 COPY --from=build-app /app/out .
 COPY --from=build-ui /app/dist ./wwwroot

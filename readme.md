@@ -58,7 +58,7 @@ open http://localhost:5173
 # from project root
 cd ui
 npm install && npm run build
-rmdir ../api/wwwroot
+rm -r ../api/wwwroot/*
 cp -r dist/* ../api/wwwroot/
 dotnet publish ./Api/Api.csproj -c Release -o out
 ```

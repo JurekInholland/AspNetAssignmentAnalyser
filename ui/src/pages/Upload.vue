@@ -142,7 +142,10 @@ const reset = () => {
                 {{ headline }}
             </h1>
         </article>
-        <h2 v-if="currentStatus">{{ currentStatus }}</h2>
+        <article>
+            <span v-if="state === Status.Running" class="loader"></span>
+            <h2 v-if="currentStatus">{{ currentStatus }}</h2>
+        </article>
         <p>{{ descriptionTexts[state] }}</p>
 
         <p class="feedback" v-if="feedback">{{ feedback }}</p>
@@ -170,9 +173,7 @@ const reset = () => {
         </div>
 
         <div v-else>
-            <article>
-                <span v-if="state === Status.Running" class="loader"></span>
-            </article>
+
             <ul v-auto-animate>
                 <TestResult v-for="res in testResults" :key="res.name" :testResult="res" />
             </ul>

@@ -18,7 +18,6 @@ public class PageController : BaseController
     [HttpGet(Name = nameof(Index))]
     public async Task<IActionResult> Index()
     {
-        await _hubContext.Clients.All.SendAsync("ReceiveMessage", "testmessage");
         return new ContentResult
         {
             Content = IndexHtml,

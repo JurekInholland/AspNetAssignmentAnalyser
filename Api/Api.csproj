@@ -12,13 +12,13 @@
 
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.3"/>
-        <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.4" />
+        <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Services\Services.csproj"/>
+        <ProjectReference Include="..\Services\Services.csproj" />
     </ItemGroup>
 
 
@@ -29,11 +29,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="wwwroot"/>
-        <Folder Include="upload"/>
+        <Folder Include="wwwroot" />
+        <Folder Include="upload" />
     </ItemGroup>
 
     <ItemGroup>
-        <TrimmerRootAssembly Remove="System.Runtime"/>
+        <TrimmerRootAssembly Remove="System.Runtime" />
     </ItemGroup>
 </Project>

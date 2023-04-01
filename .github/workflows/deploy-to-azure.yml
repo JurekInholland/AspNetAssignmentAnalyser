@@ -19,11 +19,6 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v4
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build and push image
         uses: docker/build-push-action@v2
@@ -31,15 +26,14 @@ jobs:
           context: .
           file: ./Api/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: latest
 
       - name: Deploy to ACI
         uses: azure/aci-deploy@v1
         with:
           resource-group: snake-game-host
           dns-name-label: snake-handin
-          image: ${{ secrets.ACR_LOGIN_SERVER }}/aspnetassignmentanalyser:latest
+          image: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
           ports: 8080
           environment-variables: |
             AzureWebJobsStorage=${{ secrets.AZURE_STORAGE }}

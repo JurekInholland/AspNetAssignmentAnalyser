@@ -32,8 +32,8 @@ jobs:
         uses: azure/aci-deploy@v1
         with:
           resource-group: snake-game-host
-          dns-name-label: snake-handin
-          image: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}:latest
+          # dns-name-label: snake-handin
+          image: ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.IMAGE_NAME }}
           ports: 8080
           environment-variables: |
             AzureWebJobsStorage=${{ secrets.AZURE_STORAGE }}

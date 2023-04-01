@@ -33,8 +33,8 @@ public class SnakeTestService : ISnakeTestService
             IsGoldenAppleImplemented,
         };
 
-        _options.AddArgument("--headless");
         _options.AddArgument("--no-sandbox");
+        _options.AddArgument("--headless");
         _options.AddArgument("--disable-gpu");
         _options.AddArgument("--disable-dev-shm-usage");
         _options.AddArgument("--window-size=1024x768");
@@ -70,7 +70,7 @@ public class SnakeTestService : ISnakeTestService
         {
             var methodName = _testMethods[i].Method.Name;
 
-            Thread.Sleep(100);
+            Thread.Sleep(200);
             var passed = _testMethods[i]();
             var testResult = new TestResult(i + 1, passed);
             results.Add(testResult);
